@@ -28,6 +28,7 @@ options.add_argument('--headless')
 drivermain = webdriver.Firefox(options=options)
 drivermain.get('http://www.rrk.ir/News/NewsList.aspx')
 number_reader=findnumber();
+first_code_number=0
 while (walk_days<max_walk_days):
     today=date.today()-timedelta(days=walk_days)
     today_shamsi=jalali.Gregorian(today).persian_string("{}{:02d}{:02d}")
@@ -48,7 +49,8 @@ while (walk_days<max_walk_days):
         #alert=drivermain.switch_to.alert
         #alert.accept()
         print ('***search result loaded***')
-    
+        page_no=1
+
         while True:
             search_results1=drivermain.find_elements_by_class_name('ShowNBut')
             #print(search_results1)
@@ -58,6 +60,11 @@ while (walk_days<max_walk_days):
                 search_result_link=search.find_element_by_tag_name('a').get_attribute('href')
                 print(search_result_link)
                 search_res_code=search_result_link.split('=')
+                if first_code_number==0 :
+                    first_code_number = search_res_code[1]
+                else:
+                    if first_code_number==search_res_code[1]:
+                        break;
                 image_name=data_path+search_res_code[1]+'.jpg'
                 result_datafile=data_path+'res_'+search_res_code[1]+'.txt'
                 if os.path.isfile(result_datafile):
@@ -119,6 +126,11 @@ while (walk_days<max_walk_days):
                 driver.close()
             btn_next = drivermain.find_element_by_id('cphMain_rptPagingRec_btnNextPage')
             btn_next.click()
+            print('click Next Page %d'%( page_no))
+            page_no +=1
+            if  page_no > 10 :
+                break;
+
     except Exception as e:
         print("Except:")
         print(u'->'.join(e).encode('utf-8'))
@@ -126,5 +138,10 @@ while (walk_days<max_walk_days):
         drivermain.get('http://www.rrk.ir/News/NewsList.aspx')        
 
     walk_days+=1;
+    first_code_number=0
+    drivermain.close()
+    drivermain = webdriver.Firefox(options=options)
+    drivermain.get('http://www.rrk.ir/News/NewsList.aspx')
+
 drivermain.close()
 
