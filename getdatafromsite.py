@@ -19,6 +19,11 @@ from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
 data_path='data/';
+directory = os.path.dirname(data_path)
+try:
+    os.stat(directory)
+except:
+    os.mkdir(directory)
 walk_days=0;
 max_walk_days=365;
 options = Options()
