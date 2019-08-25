@@ -20,7 +20,7 @@ from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
 
-def getdatafromsearchresult(search):
+def getdatafromsearchresult(search,lock):
     global first_code_number
     global number_reader
     search_result_link=search.find_element_by_tag_name('a').get_attribute('href')
@@ -53,7 +53,6 @@ def getdatafromsearchresult(search):
     ###################################
     input_code=''
     if mthreading :
-        lock = threading.Lock()
         lock.acquire()
         try:
             input_code=number_reader.get_numberstr_from_image(img)
@@ -93,7 +92,7 @@ def main(argv):
     mwalk_days=0
     opts=[]
     try:
-        opts,args = getopt.getopt(argv,"hstd:",["showimage","threading","daysago",])
+        opts,args = getopt.getopt(argv,"hstd:",["showimage","threading","daysago=",])
     except getopt.GetoptError as err:
         print ('Error in argument',str(err))
     for opt,arg in opts:
@@ -106,7 +105,7 @@ def main(argv):
         elif opt=='--threading':
             mthreading=True;
         elif opt=='--daysago':
-            mwalk_days=arg
+            mwalk_days=int(arg)
     return image_view,mthreading,mwalk_days
         
 
@@ -157,12 +156,13 @@ if __name__ == "__main__":
                         if len(search_results1)==0:
                             break
                         th = None
+                        lock = threading.Lock()
                         for search in search_results1:
                             if mthreading :
-                                th=threading.Thread(target=getdatafromsearchresult,args=(search,),name='th_search')
+                                th=threading.Thread(target=getdatafromsearchresult,args=(search,lock,),name='th_search')
                                 th.start()
                             else:
-                                getdatafromsearchresult(search)
+                                getdatafromsearchresult(search,lock)
                         if mthreading:
                             th.join()
                         btn_next = drivermain.find_element_by_id('cphMain_rptPagingRec_btnNextPage')
