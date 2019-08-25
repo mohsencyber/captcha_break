@@ -51,7 +51,16 @@ def getdatafromsearchresult(search):
         img.show()
     image.close()
     ###################################
-    input_code=number_reader.get_numberstr_from_image(img)
+    input_code=''
+    if mthreading :
+        lock = threading.Lock()
+        lock.acquire()
+        try:
+            input_code=number_reader.get_numberstr_from_image(img)
+        finally:
+            lock.release()
+    else:
+        input_code=number_reader.get_numberstr_from_image(img)
     print(input_code)
     ###################################
     img.close()
@@ -81,96 +90,104 @@ def getdatafromsearchresult(search):
 def main(argv):
     mthreading=False
     image_view=False
+    mwalk_days=0
     opts=[]
     try:
-        opts,args = getopt.getopt(argv,"hst",["showimage","threading",])
+        opts,args = getopt.getopt(argv,"hstd:",["showimage","threading","daysago",])
     except getopt.GetoptError as err:
         print ('Error in argument',str(err))
     for opt,arg in opts:
         if opt=='-h':
-            print('getdatafromsite.py --showimage --threading')
+            print('getdatafromsite.py --showimage --threading --daysago=n')
             print('parameters are disabled by default ')
             sys.exit()
         elif opt=='--showimage':
             image_view=True;
         elif opt=='--threading':
             mthreading=True;
-    return image_view,mthreading
+        elif opt=='--daysago':
+            mwalk_days=arg
+    return image_view,mthreading,mwalk_days
         
 
 if __name__ == "__main__":
-    data_path='data/';
-    walk_days=0;
-    max_walk_days=3*365;
-    options = Options()
-    options.add_argument('--headless')
-    global number_reader
-    global first_code_number
-    global image_view,mthreading
-    image_view=False;
-    mthreading=False;
-    #print(sys.argv)
-    image_view , mthreading = main(sys.argv[1:])
-    drivermain = webdriver.Firefox(options=options)
-    drivermain.get('http://www.rrk.ir/News/NewsList.aspx')
-    number_reader=findnumber();
-    first_code_number=0
-    while (walk_days<max_walk_days):
-        today=date.today()-timedelta(days=walk_days)
-        today_shamsi=jalali.Gregorian(today).persian_string("{}{:02d}{:02d}")
-        print(today_shamsi)
-        
-        #alert=drivermain.switch_to.alert
-        #alert.accept()
-        #time.sleep(5)
-        
-        NewsDate_input=drivermain.find_element_by_id('cphMain_dteFromNewspaperDate_dteFromNewspaperDate_txtDate')
-        NewsDate_input.send_keys(today_shamsi)
-        #time.sleep(5)
+    while True:
         try:
-            btn_search = drivermain.find_element_by_id('cphMain_btnSearch')
-            btn_search.click()
-            #time.sleep(1)
-            image_name=''
-            #alert=drivermain.switch_to.alert
-            #alert.accept()
-            print ('***search result loaded***')
-            page_no=1
-    
-            while True:
-                search_results1=drivermain.find_elements_by_class_name('ShowNBut')
-                #print(search_results1)
-                if len(search_results1)==0:
-                    break
-                th = None
-                for search in search_results1:
-                    if mthreading :
-                        th=threading.Thread(target=getdatafromsearchresult,args=(search,),name='th_search')
-                        th.start()
-                    else:
-                        getdatafromsearchresult(search)
-                if mthreading:
-                    th.join()
-                btn_next = drivermain.find_element_by_id('cphMain_rptPagingRec_btnNextPage')
-                btn_next.click()
-                page_no +=1
-                if  page_no > 10 :
-                    break;
-                else:
-                    print('click Next Page %d'%( page_no))
-    
-        except Exception as e:
-            print("Except:")
-            print(u'->'.join(str(v) for v in e).encode('utf-8'))
-            drivermain.close()
+            data_path='data/';
+            walk_days=0;
+            max_walk_days=3*365;
+            options = Options()
+            options.add_argument('--headless')
+            global number_reader
+            global first_code_number
+            global image_view,mthreading
+            image_view=False;
+            mthreading=False;
+            #print(sys.argv)
+            image_view , mthreading , walk_days = main(sys.argv[1:])
             drivermain = webdriver.Firefox(options=options)
-            drivermain.get('http://www.rrk.ir/News/NewsList.aspx')        
-    
-        walk_days+=1;
-        first_code_number=0
-        drivermain.close()
-        drivermain = webdriver.Firefox(options=options)
-        drivermain.get('http://www.rrk.ir/News/NewsList.aspx')
-    
-    drivermain.close()
+            drivermain.get('http://www.rrk.ir/News/NewsList.aspx')
+            number_reader=findnumber();
+            first_code_number=0
+            while (walk_days<max_walk_days):
+                today=date.today()-timedelta(days=walk_days)
+                today_shamsi=jalali.Gregorian(today).persian_string("{}{:02d}{:02d}")
+                print(today_shamsi)
+                
+                #alert=drivermain.switch_to.alert
+                #alert.accept()
+                #time.sleep(5)
+                
+                NewsDate_input=drivermain.find_element_by_id('cphMain_dteFromNewspaperDate_dteFromNewspaperDate_txtDate')
+                NewsDate_input.send_keys(today_shamsi)
+                #time.sleep(5)
+                try:
+                    btn_search = drivermain.find_element_by_id('cphMain_btnSearch')
+                    btn_search.click()
+                    #time.sleep(1)
+                    image_name=''
+                    #alert=drivermain.switch_to.alert
+                    #alert.accept()
+                    print ('***search result loaded***')
+                    page_no=1
+            
+                    while True:
+                        search_results1=drivermain.find_elements_by_class_name('ShowNBut')
+                        #print(search_results1)
+                        if len(search_results1)==0:
+                            break
+                        th = None
+                        for search in search_results1:
+                            if mthreading :
+                                th=threading.Thread(target=getdatafromsearchresult,args=(search,),name='th_search')
+                                th.start()
+                            else:
+                                getdatafromsearchresult(search)
+                        if mthreading:
+                            th.join()
+                        btn_next = drivermain.find_element_by_id('cphMain_rptPagingRec_btnNextPage')
+                        btn_next.click()
+                        page_no +=1
+                        if  page_no > 10 :
+                            break;
+                        else:
+                            print('click Next Page %d'%( page_no))
+            
+                except Exception as e:
+                    print("Except:")
+                    print(u'->'.join(str(v) for v in e).encode('utf-8'))
+                    drivermain.close()
+                    drivermain = webdriver.Firefox(options=options)
+                    drivermain.get('http://www.rrk.ir/News/NewsList.aspx')        
+            
+                walk_days+=1;
+                first_code_number=0
+                drivermain.close()
+                drivermain = webdriver.Firefox(options=options)
+                drivermain.get('http://www.rrk.ir/News/NewsList.aspx')
+            
+            drivermain.close()
+        except Exception as e:
+            print(str(e))
+            pass
 
