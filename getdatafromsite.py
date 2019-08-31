@@ -124,6 +124,8 @@ if __name__ == "__main__":
             mthreading=False;
             #print(sys.argv)
             image_view , mthreading , walk_days = main(sys.argv[1:])
+            if not os.path.exists(data_path):
+                os.mkdir(data_path)
             drivermain = webdriver.Firefox(options=options)
             drivermain.get('http://www.rrk.ir/News/NewsList.aspx')
             number_reader=findnumber();
@@ -165,6 +167,7 @@ if __name__ == "__main__":
                                 getdatafromsearchresult(search,lock)
                         if mthreading:
                             th.join()
+                        time.sleep(5)
                         btn_next = drivermain.find_element_by_id('cphMain_rptPagingRec_btnNextPage')
                         btn_next.click()
                         page_no +=1
